@@ -1,0 +1,6 @@
+
+/target/
+/rustraylib/target/
+.DS_Store
+**/*.rs.bk
+foo.png

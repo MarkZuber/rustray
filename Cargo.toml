@@ -1,0 +1,9 @@
+[package]
+name = "rustray"
+version = "0.1.0"
+authors = ["Mark Zuber <mark@zube.com>"]
+
+[workspace]
+
+[dependencies]
+rustraylib = { path = "rustraylib" }
