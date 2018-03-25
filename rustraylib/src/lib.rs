@@ -53,29 +53,29 @@ impl Renderer {
   fn render_multi_threaded(camera: Camera, scene: Scene, render_data: RenderData) -> PixelArray {
     let mut pixels = PixelArray::new(render_data.width, render_data.height);
 
-    let tracer = RayTracer {
-      camera,
-      render_data: render_data.clone(),
-      scene,
-    };
+    // let tracer = RayTracer {
+    //   camera,
+    //   render_data: render_data.clone(),
+    //   scene,
+    // };
 
-    let pool = ThreadPool::new(render_data.processor_count as usize);
+    // let pool = ThreadPool::new(render_data.processor_count as usize);
 
-    for y in 0..pixels.height {
-      for x in 0..pixels.width {
-        // print!(".");
+    // for y in 0..pixels.height {
+    //   for x in 0..pixels.width {
+    //     // print!(".");
 
-        let pixelx = x.clone();
-        let pixely = y.clone();
+    //     let pixelx = x.clone();
+    //     let pixely = y.clone();
 
-        pool.execute(move || {
-          Renderer::handle_render_pixel(tracer, pixelx, pixely);
-        });
-        // let color = tracer.get_pixel_color(x, y);
-        // pixels.set_pixel_color(x, y, color);
-      }
-      println!();
-    }
+    //     pool.execute(move || {
+    //       Renderer::handle_render_pixel(tracer, pixelx, pixely);
+    //     });
+    //     // let color = tracer.get_pixel_color(x, y);
+    //     // pixels.set_pixel_color(x, y, color);
+    //   }
+    //   println!();
+    // }
 
     pixels
   }

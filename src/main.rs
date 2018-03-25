@@ -8,9 +8,9 @@ use rustraylib::Renderer;
 use rustraylib::Camera;
 
 fn main() {
-    let processor_count = 8;
-    let width = 5;
-    let height = 5;
+    let processor_count = 1;
+    let width = 500;
+    let height = 500;
     let ray_trace_depth = 5;
 
     let camera_pos = PosVector {
