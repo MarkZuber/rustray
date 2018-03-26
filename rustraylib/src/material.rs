@@ -107,7 +107,6 @@ impl ChessboardMaterial {
 
 impl Material for ChessboardMaterial {
   fn get_color(&self, u: f64, v: f64) -> ColorVector {
-    // let t = ChessboardMaterial::wrap_up(u) * ChessboardMaterial::wrap_up(v);
     let t = ChessboardMaterial::wrap_up_scale(u, self.scale)
       * ChessboardMaterial::wrap_up_scale(v, self.scale);
     if t < 0.0 {
