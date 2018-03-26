@@ -1,4 +1,6 @@
 extern crate rustraylib;
+extern crate elapsed;
+use elapsed::measure_time;
 
 use rustraylib::PosVector;
 use rustraylib::ColorVector;
@@ -8,9 +10,9 @@ use rustraylib::Renderer;
 use rustraylib::Camera;
 
 fn main() {
-    let processor_count = 1;
-    let width = 500;
-    let height = 500;
+    let processor_count = 8;
+    let width = 1500;
+    let height = 1500;
     let ray_trace_depth = 5;
 
     let camera_pos = PosVector {
@@ -72,5 +74,8 @@ fn main() {
 
     let camera = Camera::new(camera_pos, camera_look_at, camera_up, camera_fov);
 
-    Renderer::render_frame(camera, render_data, scene, output_file_path);
+    let (elapsed, _) = measure_time(|| {
+        Renderer::render_frame(camera, render_data, scene, output_file_path);
+    });
+    println!("elapsed = {:?}ms", elapsed.millis());
 }

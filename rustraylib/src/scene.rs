@@ -1,4 +1,3 @@
-use std::rc::Rc;
 use std::fmt;
 use image;
 
@@ -215,13 +214,13 @@ impl Shape for SphereShape {
       // todo: u/v coordinate texture mapping if self.material has a texture
       let color = self.material.get_color(0.0, 0.0);
 
-      println!("intersected!");
+      // println!("intersected!");
 
       // found intersection
       IntersectionInfo {
         color,
         distance,
-        element: Arc::from((*self).clone()),
+        element: Some(Arc::new(self.clone())), // Some(Box::from((*self).clone()), // Box::from((*self).clone()),
         is_hit: true,
         hit_count: 1,
         normal,
@@ -266,8 +265,8 @@ impl Shape for PlaneShape {
 #[derive(Debug)]
 pub struct Scene {
   background: Background,
-  shapes: Vec<Arc<Shape>>,
-  lights: Vec<Arc<Light>>,
+  shapes: Vec<Box<Shape>>,
+  lights: Vec<Box<Light>>,
 
   render_diffuse: bool,
   render_reflection: bool,
@@ -276,75 +275,78 @@ pub struct Scene {
   render_highlights: bool,
 }
 
+unsafe impl Send for Scene {}
+unsafe impl Sync for Scene {}
+
 #[derive(Debug)]
 pub struct IntersectionInfo {
   color: ColorVector,
   distance: f64,
-  element: Arc<Shape>,
+  element: Option<Arc<Shape>>,
   is_hit: bool,
   hit_count: u32,
   normal: PosVector,
   position: PosVector,
 }
 
-#[derive(Debug)]
-pub struct NullShape {}
+// #[derive(Debug)]
+// pub struct NullShape {}
 
-impl NullShape {
-  pub fn new() -> NullShape {
-    NullShape {}
-  }
-}
+// impl NullShape {
+//   pub fn new() -> NullShape {
+//     NullShape {}
+//   }
+// }
 
-#[derive(Debug)]
-pub struct NullMaterial {}
+// #[derive(Debug)]
+// pub struct NullMaterial {}
 
-impl Material for NullMaterial {
-  fn get_color(&self, u: f64, v: f64) -> ColorVector {
-    ColorVector {
-      r: 0.0,
-      g: 0.0,
-      b: 0.0,
-    }
-  }
-  fn has_texture(&self) -> bool {
-    false
-  }
-  fn get_gloss(&self) -> f64 {
-    0.0
-  }
-  fn get_reflection(&self) -> f64 {
-    0.0
-  }
-  fn get_refraction(&self) -> f64 {
-    0.0
-  }
-  fn get_transparency(&self) -> f64 {
-    0.0
-  }
-}
+// impl Material for NullMaterial {
+//   fn get_color(&self, u: f64, v: f64) -> ColorVector {
+//     ColorVector {
+//       r: 0.0,
+//       g: 0.0,
+//       b: 0.0,
+//     }
+//   }
+//   fn has_texture(&self) -> bool {
+//     false
+//   }
+//   fn get_gloss(&self) -> f64 {
+//     0.0
+//   }
+//   fn get_reflection(&self) -> f64 {
+//     0.0
+//   }
+//   fn get_refraction(&self) -> f64 {
+//     0.0
+//   }
+//   fn get_transparency(&self) -> f64 {
+//     0.0
+//   }
+// }
 
-impl Shape for NullShape {
-  fn get_position(&self) -> PosVector {
-    PosVector {
-      x: 0.0,
-      y: 0.0,
-      z: 0.0,
-    }
-  }
+// impl Shape for NullShape {
+//   fn get_position(&self) -> PosVector {
+//     PosVector {
+//       x: 0.0,
+//       y: 0.0,
+//       z: 0.0,
+//     }
+//   }
 
-  fn intersect(&self, ray: &Ray) -> IntersectionInfo {
-    IntersectionInfo::new_default()
-  }
+//   fn intersect(&self, ray: &Ray) -> IntersectionInfo {
+//     IntersectionInfo::new_default()
+//   }
 
-  fn get_id(&self) -> u32 {
-    0
-  }
+//   fn get_id(&self) -> u32 {
+//     0
+//   }
 
-  fn get_material(&self) -> Arc<Material> {
-    Arc::new(NullMaterial {})
-  }
-}
+//   fn get_material(&self) -> Arc<Material> {
+//     Arc::new(NullMaterial {})
+//   }
+// }
 
 impl IntersectionInfo {
   pub fn new_default() -> IntersectionInfo {
@@ -355,7 +357,7 @@ impl IntersectionInfo {
         b: 0.0,
       },
       distance: 100000000000.0, // todo: f64 max
-      element: Arc::new(NullShape::new()),
+      element: None,
       is_hit: false,
       hit_count: 0,
       normal: PosVector {
@@ -423,12 +425,12 @@ impl Scene {
 
     let max_axis = sphere_distance_increment * num_spheres_per_axis as f64;
 
-    let mut shapes: Vec<Arc<Shape>> = Vec::new();
+    let mut shapes: Vec<Box<Shape>> = Vec::new();
 
     let mut x = 0.0;
     let mut id = 1;
     while x <= max_axis {
-      shapes.push(Arc::new(SphereShape {
+      shapes.push(Box::new(SphereShape {
         position: PosVector {
           x: x,
           y: 0.0,
@@ -444,7 +446,7 @@ impl Scene {
 
     let mut y = 0.0;
     while y <= max_axis {
-      shapes.push(Arc::new(SphereShape {
+      shapes.push(Box::new(SphereShape {
         position: PosVector {
           x: 0.0,
           y: y,
@@ -460,7 +462,7 @@ impl Scene {
 
     let mut z = 0.0;
     while z <= max_axis {
-      shapes.push(Arc::new(SphereShape {
+      shapes.push(Box::new(SphereShape {
         position: PosVector {
           x: 0.0,
           y: 0.0,
@@ -495,15 +497,15 @@ impl Scene {
     };
 
     if show_plane {
-      shapes.push(Arc::new(PlaneShape {
+      shapes.push(Box::new(PlaneShape {
         position: plane_pos,
         d_val: plane_d_val,
         material: Arc::new(chess_mat),
       }));
     }
 
-    let mut lights: Vec<Arc<Light>> = Vec::new();
-    lights.push(Arc::new(PointLight {
+    let mut lights: Vec<Box<Light>> = Vec::new();
+    lights.push(Box::new(PointLight {
       position: PosVector {
         x: -5.0,
         y: 10.0,
@@ -516,7 +518,7 @@ impl Scene {
       },
     }));
 
-    lights.push(Arc::new(PointLight {
+    lights.push(Box::new(PointLight {
       position: PosVector {
         x: 5.0,
         y: 10.0,
@@ -627,13 +629,20 @@ impl RayTracer {
     }
   }
 
-  fn test_intersection(&self, ray: &Ray, exclude: Arc<Shape>) -> IntersectionInfo {
+  fn test_intersection(&self, ray: &Ray, exclude: Option<Arc<Shape>>) -> IntersectionInfo {
     let mut hit_count = 0;
     let mut best_info = IntersectionInfo::new_default();
 
+    let mut exclude_shape_id = 0;
+
+    if let Some(exclude_shape) = exclude {
+      exclude_shape_id = exclude_shape.get_id();
+    } 
+
     for shape in &self.scene.shapes {
       /*todo: Some(exclude) || */
-      if shape.get_id() != exclude.get_id() {
+
+      if shape.get_id() != exclude_shape_id {
         let info = shape.intersect(ray);
         if info.is_hit && info.distance < best_info.distance && info.distance >= 0.0 {
           best_info = info;
@@ -678,58 +687,75 @@ impl RayTracer {
       // max depth of raytracing.  increasing depth calculates more color, but takes exp longer
       if depth < self.render_data.ray_trace_depth {
         // calculate reflection ray
-        if self.scene.render_reflection
-          && intersection_info.element.get_material().get_reflection() > 0.0
-        {
-          let reflection_ray = self.get_reflection_ray(
-            intersection_info.position,
-            intersection_info.normal,
-            ray.direction,
-          );
-          let mut refl = self.test_intersection(&reflection_ray, intersection_info.element.clone());
-          if refl.is_hit && refl.distance > 0.0 {
-            refl.color = self.ray_trace(&refl, &reflection_ray, depth + 1);
-          } else {
-            refl.color = self.scene.background.color;
-          }
 
-          color = color.blend(
-            refl.color,
-            intersection_info.element.get_material().get_reflection(),
-          );
+        if self.scene.render_reflection
+        {
+          match intersection_info.element.clone() {
+            None => {},
+            Some(elem) => {
+              if elem.get_material().get_reflection() > 0.0 {
+                let reflection_ray = self.get_reflection_ray(
+                  intersection_info.position,
+                  intersection_info.normal,
+                  ray.direction,
+                );
+                let mut refl = self.test_intersection(&reflection_ray, Some(elem.clone()));
+                if refl.is_hit && refl.distance > 0.0 {
+                  refl.color = self.ray_trace(&refl, &reflection_ray, depth + 1);
+                } else {
+                  refl.color = self.scene.background.color;
+                }
+
+                color = color.blend(
+                  refl.color,
+                  elem.get_material().get_reflection(),
+                );
+              }
+            }
+          }
         }
 
-        if self.scene.render_refraction
-          && intersection_info.element.get_material().get_transparency() > 0.0
-        {
-          let refraction_ray = self.get_refraction_ray(
-            intersection_info.position,
-            intersection_info.normal,
-            ray.direction,
-            intersection_info.element.get_material().get_refraction(),
-          );
-          let mut refr = intersection_info.element.intersect(&refraction_ray);
-          if refr.is_hit {
-            let element_refraction_ray = self.get_refraction_ray(
-              refr.position,
-              refr.normal,
-              refraction_ray.direction,
-              refr.element.get_material().get_refraction(),
-            );
-            refr =
-              self.test_intersection(&element_refraction_ray, intersection_info.element.clone());
-            if refr.is_hit && refr.distance > 0.0 {
-              refr.color = self.ray_trace(&refr, &element_refraction_ray, depth + 1);
-            } else {
-              refr.color = self.scene.background.color;
+        if self.scene.render_refraction {
+          match intersection_info.element.clone() {
+            None => {},
+            Some(elem) => {
+              if elem.get_material().get_transparency() > 0.0 {
+                let refraction_ray = self.get_refraction_ray(
+                  intersection_info.position,
+                  intersection_info.normal,
+                  ray.direction,
+                  elem.clone().get_material().get_refraction(),
+                );
+                let mut refr = elem.clone().intersect(&refraction_ray);
+                if refr.is_hit {
+                  match refr.element {
+                    None => {},
+                    Some(refrelem) => {
+                      let element_refraction_ray = self.get_refraction_ray(
+                        refr.position,
+                        refr.normal,
+                        refraction_ray.direction,
+                        refrelem.get_material().get_refraction(),
+                      );
+                      refr =
+                        self.test_intersection(&element_refraction_ray, Some(elem.clone()));
+                      if refr.is_hit && refr.distance > 0.0 {
+                        refr.color = self.ray_trace(&refr, &element_refraction_ray, depth + 1);
+                      } else {
+                        refr.color = self.scene.background.color;
+                      }
+                    }
+                  }
+                } else {
+                  refr.color = self.scene.background.color;
+                }
+                color = color.blend(
+                  refr.color,
+                  elem.get_material().get_transparency(),
+                );
+              }
             }
-          } else {
-            refr.color = self.scene.background.color;
           }
-          color = color.blend(
-            refr.color,
-            intersection_info.element.get_material().get_transparency(),
-          );
         }
 
         let shadow_ray = Ray {
@@ -737,37 +763,46 @@ impl RayTracer {
           direction: v,
         };
 
-        let shadow_intersection =
-          self.test_intersection(&shadow_ray, intersection_info.element.clone());
-        if self.scene.render_shadow {
-          if shadow_intersection.is_hit
-            && shadow_intersection.element.get_id() != intersection_info.element.get_id()
-          {
-            let trans = shadow_intersection
-              .element
-              .get_material()
-              .get_transparency();
-            let trans_power = trans.powf(0.5);
-            color = color.multiply_by_scalar(0.5 + (0.5 * trans_power)); // todo: make sure this is ordered correctly for the power calculation
-          }
-        }
+        match intersection_info.element.clone() {
+          None => {},
+          Some(elem) => {
+            let shadow_intersection =
+              self.test_intersection(&shadow_ray, Some(elem.clone()));
+            if self.scene.render_shadow {
+              if shadow_intersection.is_hit {
+                match shadow_intersection.element {
+                  None => {},
+                  Some(shadowelem) => {
+                    if shadowelem.get_id() != elem.get_id()
+                    {
+                      let trans = shadowelem
+                        .get_material()
+                        .get_transparency();
+                      let trans_power = trans.powf(0.5);
+                      color = color.multiply_by_scalar(0.5 + (0.5 * trans_power)); // todo: make sure this is ordered correctly for the power calculation
+                    }
+                  }
+                }
+              }
+            }
 
-        if self.scene.render_highlights && !shadow_intersection.is_hit
-          && intersection_info.element.get_material().get_gloss() > 0.0
-        {
-          let lv = intersection_info
-            .element
-            .get_position()
-            .subtract(light.get_position())
-            .normalize();
-          let e = self
-            .camera
-            .position
-            .subtract(intersection_info.element.get_position())
-            .normalize();
-          let h = e.subtract(lv).normalize();
-          let gloss_weight = 0.0; // todo: pow(std::max(dot(info->Normal(), h), 0.0), shininess);
-          color = color.add(light.get_color().multiply_by_scalar(gloss_weight));
+            if self.scene.render_highlights && !shadow_intersection.is_hit
+              && elem.get_material().get_gloss() > 0.0
+            {
+              let lv = elem
+                .get_position()
+                .subtract(light.get_position())
+                .normalize();
+              let e = self
+                .camera
+                .position
+                .subtract(elem.get_position())
+                .normalize();
+              let h = e.subtract(lv).normalize();
+              let gloss_weight = 0.0; // todo: pow(std::max(dot(info->Normal(), h), 0.0), shininess);
+              color = color.add(light.get_color().multiply_by_scalar(gloss_weight));
+            }
+          }
         }
       }
     }
@@ -776,8 +811,7 @@ impl RayTracer {
   }
 
   fn calculate_color(&self, ray: &Ray) -> ColorVector {
-    let sh = Arc::new(NullShape::new());
-    let intersection_info = self.test_intersection(ray, sh);
+    let intersection_info = self.test_intersection(ray, None);
     if intersection_info.is_hit {
       self.ray_trace(&intersection_info, ray, 0)
     } else {
@@ -872,11 +906,11 @@ impl Worker {
 
       match message {
         Message::NewJob(job) => {
-          println!("Worker {} got a job; executing.", id);
+          // println!("Worker {} got a job; executing.", id);
           job.call_box();
         }
         Message::Terminate => {
-          println!("Worker {} was told to terminate.", id);
+          // println!("Worker {} was told to terminate.", id);
           break;
         }
       }
