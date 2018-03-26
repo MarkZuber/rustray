@@ -8,3 +8,4 @@ authors = ["Mark Zuber <mark@zube.com>"]
 [dependencies]
 rustraylib = { path = "rustraylib" }
 elapsed = "0.1"
+num_cpus = "1.0"

@@ -1,16 +1,17 @@
-extern crate rustraylib;
 extern crate elapsed;
+extern crate num_cpus;
+extern crate rustraylib;
 use elapsed::measure_time;
 
-use rustraylib::PosVector;
+use rustraylib::Camera;
 use rustraylib::ColorVector;
-use rustraylib::Scene;
+use rustraylib::PosVector;
 use rustraylib::RenderData;
 use rustraylib::Renderer;
-use rustraylib::Camera;
+use rustraylib::Scene;
 
 fn main() {
-    let processor_count = 8;
+    let num_threads = num_cpus::get() as u32;
     let width = 1500;
     let height = 1500;
     let ray_trace_depth = 5;
@@ -35,8 +36,8 @@ fn main() {
         width,
         height,
         ray_trace_depth,
-        processor_count,
-        thread_per_line: true
+        num_threads,
+        thread_per_line: true,
     };
 
     let scene = Scene::new_marbles_scene(
@@ -50,9 +51,8 @@ fn main() {
         plane_d_val,
     );
 
-    println!("Hello, world!");
+    println!("Starting render...");
     let output_file_path = "foo.png";
-
     let camera = Camera::new(camera_pos, camera_look_at, camera_up, camera_fov);
 
     let (elapsed, _) = measure_time(|| {

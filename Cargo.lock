@@ -269,6 +269,7 @@ name = "rustray"
 version = "0.1.0"
 dependencies = [
  "elapsed 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num_cpus 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustraylib 0.1.0",
 ]
 
