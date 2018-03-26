@@ -6,6 +6,11 @@ pub struct ColorVector {
 }
 
 impl ColorVector {
+
+  pub fn new(r: f64, g: f64, b: f64) -> ColorVector {
+    ColorVector { r, g, b }
+  }
+
   fn clamp_val(val: f64) -> f64 {
     if val < 0.0 {
       0.0

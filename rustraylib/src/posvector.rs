@@ -6,6 +6,14 @@ pub struct PosVector {
 }
 
 impl PosVector {
+  pub fn new(x: f64, y: f64, z: f64) -> PosVector {
+    PosVector { x, y, z }
+  }
+
+  pub fn new_default() -> PosVector {
+    PosVector::new(0.0, 0.0, 0.0)
+  }
+
   pub fn subtract(&self, other: PosVector) -> PosVector {
     PosVector {
       x: self.x - other.x,
