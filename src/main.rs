@@ -1,26 +1,22 @@
-extern crate rustraylib;
 extern crate elapsed;
+extern crate num_cpus;
+extern crate rustraylib;
 use elapsed::measure_time;
 
 use std::sync::Arc;
 
-use rustraylib::PosVector;
+use rustraylib::Camera;
 use rustraylib::ColorVector;
-use rustraylib::Scene;
+use rustraylib::PosVector;
 use rustraylib::RenderData;
 use rustraylib::Renderer;
-use rustraylib::Camera;
+use rustraylib::Scene;
 
 fn create_output_file_path(iter: u32) -> String {
     format!("render_{}.png", iter)
 }
 
-fn main() {
-    let processor_count = 8;
-    let width = 1500;
-    let height = 1500;
-    let ray_trace_depth = 5;
-
+fn get_marbles_scene_and_camera() -> (Arc<Scene>, Camera) {
     let camera_pos = PosVector::new(50.0, 30.0, 50.0);
 
     let camera_look_at = PosVector::new(-0.1, 0.1, 0.0);
@@ -37,14 +33,6 @@ fn main() {
     let plane_pos = PosVector::new(0.0, 0.0, 1.0);
     let plane_d_val: f64 = 0.0;
 
-    let render_data = RenderData {
-        width,
-        height,
-        ray_trace_depth,
-        processor_count,
-        thread_per_line: true
-    };
-
     let scene = Arc::new(Scene::new_marbles_scene(
         background_color,
         background_ambience,
@@ -56,21 +44,50 @@ fn main() {
         plane_d_val,
     ));
 
-    let mut camera = Camera::new(camera_pos, camera_look_at, camera_up, camera_fov);
+    (scene, Camera::new(camera_pos, camera_look_at, camera_up, camera_fov))
+}
 
-    // let scene = Arc::new(Scene::new_basic_scene());
-    // let mut camera = Camera::new(PosVector::new(7.5, 7.5, 2.3), PosVector::new(0.0, 0.0, 0.0), PosVector::new(0.0, 0.0, 1.0), 50.0);
+fn get_simple_scene_and_camera() -> (Arc<Scene>, Camera) {
+    (Arc::new(Scene::new_basic_scene()), Camera::new(PosVector::new(7.5, 7.5, 2.3), PosVector::new(0.0, 0.0, 0.0), PosVector::new(0.0, 0.0, 1.0), 50.0))
+}
 
-    println!("Hello, world!");
+fn main() {
+    let num_threads = num_cpus::get() as u32;
+    let width = 1500;
+    let height = 1500;
+    let ray_trace_depth = 5;
 
+    println!("Perparing to render scene 1");
+    let (elapsed1, _) = measure_time(|| {
+        let (scene1, cam1) = get_marbles_scene_and_camera();
+        let scene1_path = create_output_file_path(1);
+        Renderer::render_frame(
+            cam1.clone(), 
+            RenderData { width, height, ray_trace_depth, num_threads, thread_per_line: true },
+            scene1.clone(), 
+            &scene1_path);
+    });
+    println!("elapsed = {:?}ms", elapsed1.millis());        
 
-    for i in 1..2 {
-        let output_file_path = create_output_file_path(i);
-        let (elapsed, _) = measure_time(|| {
-            Renderer::render_frame(camera.clone(), render_data, scene.clone(), &output_file_path);
-        });
-        // camera = Camera::new(PosVector::new(camera.position.x, camera.position.y, camera.position.z - (0.1 * (i as f64))), camera_look_at, camera_up, camera_fov);
-        // camera = Camera::new(PosVector::new(camera.position.x, camera.position.y, camera.position.z), camera_look_at, camera_up, camera_fov);
-        println!("elapsed = {:?}ms", elapsed.millis());        
-    }
+    println!("Preparing to render scene 2");
+    let (elapsed2, _) = measure_time(|| {
+        let (scene2, cam2) = get_simple_scene_and_camera();
+        let scene2_path = create_output_file_path(2);
+        Renderer::render_frame(
+            cam2.clone(), 
+            RenderData { width, height, ray_trace_depth, num_threads, thread_per_line: true },
+            scene2.clone(), 
+            &scene2_path);
+    });
+    println!("elapsed = {:?}ms", elapsed2.millis());        
+
+    // for i in 1..2 {
+    //     let output_file_path = create_output_file_path(i);
+    //     let (elapsed, _) = measure_time(|| {
+    //         Renderer::render_frame(camera.clone(), render_data, scene.clone(), &output_file_path);
+    //     });
+    //     // camera = Camera::new(PosVector::new(camera.position.x, camera.position.y, camera.position.z - (0.1 * (i as f64))), camera_look_at, camera_up, camera_fov);
+    //     // camera = Camera::new(PosVector::new(camera.position.x, camera.position.y, camera.position.z), camera_look_at, camera_up, camera_fov);
+    //     println!("elapsed = {:?}ms", elapsed.millis());        
+    // }
 }

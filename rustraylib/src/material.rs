@@ -1,4 +1,3 @@
-use posvector::PosVector;
 use color::ColorVector;
 use std::fmt;
 
@@ -83,35 +82,33 @@ impl ChessboardMaterial {
   /// </summary>
   /// <param name="t"></param>
   /// <returns></returns>
-  fn wrap_up(t: f64) -> f64 {
-    let mut x = t % 2.0;
-    if x < -1.0 {
-        x = x + 2.0;
-    }
-    if x >= 1.0 {
-        x = x - 2.0;
-    }
-    x
-  }
+  // fn wrap_up(t: f64) -> f64 {
+  //   let mut x = t % 2.0;
+  //   if x < -1.0 {
+  //       x = x + 2.0;
+  //   }
+  //   if x >= 1.0 {
+  //       x = x - 2.0;
+  //   }
+  //   x
+  // }
 
   fn wrap_up_scale(t: f64, scale: f64) -> f64 {
     let mut x = t % scale;
-    if x < -scale/2.0 {
-        x = x + scale;
+    if x < -scale / 2.0 {
+      x = x + scale;
     }
-    if x >= scale/2.0 {
-        x = x - scale;
+    if x >= scale / 2.0 {
+      x = x - scale;
     }
-    x    
+    x
   }
 }
 
 impl Material for ChessboardMaterial {
-
-
   fn get_color(&self, u: f64, v: f64) -> ColorVector {
-    // let t = ChessboardMaterial::wrap_up(u) * ChessboardMaterial::wrap_up(v);
-    let t = ChessboardMaterial::wrap_up_scale(u, self.scale) * ChessboardMaterial::wrap_up_scale(v, self.scale);
+    let t = ChessboardMaterial::wrap_up_scale(u, self.scale)
+      * ChessboardMaterial::wrap_up_scale(v, self.scale);
     if t < 0.0 {
       self.color_even.clone()
     } else {
