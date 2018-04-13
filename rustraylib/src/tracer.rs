@@ -36,7 +36,7 @@ impl IntersectionInfo {
 pub struct RayTracer {
   pub camera: Camera,
   pub render_data: RenderData,
-  pub scene: Scene,
+  pub scene: Arc<Scene>,
 }
 
 impl RayTracer {
@@ -67,8 +67,6 @@ impl RayTracer {
     }
 
     for shape in &self.scene.shapes {
-      /*todo: Some(exclude) || */
-
       if shape.get_id() != exclude_shape_id {
         let info = shape.intersect(ray);
         if info.is_hit && info.distance < best_info.distance && info.distance >= 0.0 {
@@ -294,8 +292,11 @@ impl RayTracer {
   }
 
   pub fn get_pixel_color(&self, x: u32, y: u32) -> ColorVector {
+    // xp, yp are scaled as -1.0..1.0 each to represent their view range in the image regardless of final resolution.
     let xp = x as f64 / self.render_data.width as f64 * 2.0 - 1.0;
-    let yp = y as f64 / self.render_data.height as f64 * 2.0 - 1.0;
+    let yp = -(y as f64 / self.render_data.height as f64 * 2.0 - 1.0);  // yp is UP but our pixels are increasing in value DOWN.  so need inversion here.
+
+    // println!("{},{} -> {},{}", x, y, xp, yp);
 
     let ray = self.camera.get_ray(xp, yp);
     self.calculate_color(&ray)
