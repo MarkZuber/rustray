@@ -37,6 +37,78 @@ unsafe impl Sync for Scene {}
 
 
 impl Scene {
+
+  pub fn new_basic_scene() -> Scene {
+    let background = Background::new(ColorVector::new(0.0, 0.0, 0.0), 0.2);
+    
+    let mut shapes: Vec<Box<Shape>> = Vec::new();
+
+    // right most sphere: purple
+    shapes.push(Box::new(SphereShape {
+      position: PosVector::new(2.5, 5.0, 1.0),
+      radius: 0.75,
+      material: Arc::new(SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(1.0, 0.0, 1.0))),
+      id: 1
+    }));
+
+    // left most sphere: red
+    shapes.push(Box::new(SphereShape {
+      position: PosVector::new(3.5, 1.25, 1.5),
+      radius: 1.0,
+      material: Arc::new(SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(1.0, 1.0, 0.0))),
+      id: 2
+    }));
+
+    // middle sphere: cyan
+    shapes.push(Box::new(SphereShape {
+      position: PosVector::new(2.0, 3.0, 1.0),
+      radius: 1.0,
+      material: Arc::new(SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(0.0, 1.0, 1.0))),
+      id: 3
+    }));
+
+    // bottom plane:  green
+    shapes.push(Box::new(PlaneShape {
+      position: PosVector::new(0.0, 0.0, 1.0),
+      d_val: 0.0,
+      material: Arc::new(SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(0.0, 1.0, 0.0))),
+      id: 4,
+    }));
+
+    // right plane:  blue
+    shapes.push(Box::new(PlaneShape {
+      position: PosVector::new(1.0, 0.0, 0.0),
+      d_val: 0.0,
+      material: Arc::new(SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(0.0, 0.0, 1.0))),
+      id: 5,
+    }));
+
+    // left plane: red
+    shapes.push(Box::new(PlaneShape {
+      position: PosVector::new(0.0, 1.0, 0.0),
+      d_val: 0.0,
+      material: Arc::new(SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(1.0, 0.0, 0.0))),
+      id: 6,
+    }));
+
+    let mut lights: Vec<Box<Light>> = Vec::new();
+    lights.push(Box::new(PointLight::new(
+      PosVector::new(100.0, 60.0, 40.0),
+      ColorVector::new(1.0, 1.0, 1.0)
+    )));
+
+    Scene {       
+      background,
+      shapes,
+      lights,
+      render_diffuse: true,
+      render_reflection: true,
+      render_refraction: true,
+      render_shadow: true,
+      render_highlights: true,
+    }
+  }
+
   pub fn new_marbles_scene(
     background_color: ColorVector,
     background_ambience: f64,
@@ -63,7 +135,7 @@ impl Scene {
       shapes.push(Box::new(SphereShape {
         position: PosVector::new(x, 0.0, 0.0),
         radius: sphere_radius,
-        material: Arc::new(blue_material),
+        material: Arc::new(red_material),
         id,
       }));
       x += sphere_distance_increment;
@@ -87,7 +159,7 @@ impl Scene {
       shapes.push(Box::new(SphereShape {
         position: PosVector::new(0.0, 0.0, z),
         radius: sphere_radius,
-        material: Arc::new(red_material),
+        material: Arc::new(blue_material),
         id,
       }));
       z += sphere_distance_increment;
@@ -119,12 +191,12 @@ impl Scene {
     let mut lights: Vec<Box<Light>> = Vec::new();
     lights.push(Box::new(PointLight::new(
       PosVector::new(-5.0, 10.0, 10.0),
-      ColorVector::new(0.8, 0.8, 0.8)
+      ColorVector::new(0.4, 0.4, 0.4)
     )));
 
     lights.push(Box::new(PointLight::new(
       PosVector::new(5.0, 10.0, 10.0),
-      ColorVector::new(0.8, 0.8, 0.8)
+      ColorVector::new(0.4, 0.4, 0.4)
     )));
 
     let scene = Scene {

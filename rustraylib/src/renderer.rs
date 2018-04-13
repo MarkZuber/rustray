@@ -82,7 +82,7 @@ impl Renderer {
   pub fn render_frame(
     camera: Camera,
     render_data: RenderData,
-    scene: Scene,
+    scene: Arc<Scene>,
     output_file_path: &str,
   ) {
     println!("Scene: {:?}", scene);
@@ -93,7 +93,7 @@ impl Renderer {
     pixel_array.lock().unwrap().save_as_png(output_file_path);
   }
 
-  fn render_single_threaded(camera: Camera, scene: Scene, render_data: RenderData) -> Arc<Mutex<PixelArray>> {
+  fn render_single_threaded(camera: Camera, scene: Arc<Scene>, render_data: RenderData) -> Arc<Mutex<PixelArray>> {
     let pixels = Arc::new(Mutex::new(PixelArray::new(render_data.width, render_data.height)));
 
     let tracer = RayTracer {
@@ -114,7 +114,7 @@ impl Renderer {
     pixels
   }
 
-  fn render_multi_threaded(camera: Camera, scene: Scene, render_data: RenderData) -> Arc<Mutex<PixelArray>> {
+  fn render_multi_threaded(camera: Camera, scene: Arc<Scene>, render_data: RenderData) -> Arc<Mutex<PixelArray>> {
     let pixels = Arc::new(Mutex::new(PixelArray::new(render_data.width, render_data.height)));
 
     let tracer = Arc::new(RayTracer {
@@ -164,7 +164,7 @@ impl Renderer {
     pixels
   }
 
-  fn render(camera: Camera, scene: Scene, render_data: RenderData) -> Arc<Mutex<PixelArray>> {
+  fn render(camera: Camera, scene: Arc<Scene>, render_data: RenderData) -> Arc<Mutex<PixelArray>> {
     if render_data.processor_count <= 1 {
       Renderer::render_single_threaded(camera, scene, render_data)
     } else {

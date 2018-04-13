@@ -47,6 +47,14 @@ impl ColorVector {
     }
   }
 
+  pub fn multiply(&self, other: ColorVector) -> ColorVector {
+    ColorVector {
+      r: self.r * other.r,
+      g: self.g * other.g,
+      b: self.b * other.b,
+    }
+  }
+
   pub fn blend(&self, other: ColorVector, weight: f64) -> ColorVector {
     let temp = self.multiply_by_scalar(1.0 - weight);
     let temp2 = temp.add(other.multiply_by_scalar(1.0 - weight));

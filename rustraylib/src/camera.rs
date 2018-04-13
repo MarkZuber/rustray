@@ -21,16 +21,16 @@ impl Ray {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Camera {
-  position: PosVector,
-  look_at: PosVector,
-  up: PosVector,
-  fov: f64,
+  pub position: PosVector,
+  pub look_at: PosVector,
+  pub up: PosVector,
+  pub fov: f64,
 
-  a1: PosVector,
-  a2: PosVector,
-  a3: PosVector,
+  a1: PosVector,  // vector x axis of screen
+  a2: PosVector,  // vector y axis of screen
+  a3: PosVector,  // vector into the screen
   dval: f64,
 }
 

@@ -95,12 +95,7 @@ impl RayTracer {
 
       let l = v.dot_product(intersection_info.normal);
       if l > 0.0 {
-        let temp_color = ColorVector {
-          r: 0.0,
-          g: 0.0,
-          b: 0.0,
-        };
-        color = color.add(temp_color.multiply_by_scalar(l))
+        color = color.add(intersection_info.color.multiply(light.get_color()).multiply_by_scalar(l))
       }
     }
     color

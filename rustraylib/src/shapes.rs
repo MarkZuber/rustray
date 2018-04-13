@@ -40,7 +40,7 @@ impl Shape for SphereShape {
       // todo: u/v coordinate texture mapping if self.material has a texture
       let color = self.material.get_color(0.0, 0.0);
 
-      // println!("intersected!");
+      // println!("intersected sphere!");
 
       // found intersection
       IntersectionInfo {
@@ -99,6 +99,8 @@ impl Shape for PlaneShape {
           let v = intersect_position.dot_product(vec_v);
           color = self.material.get_color(u, v);
         }
+
+        // println!("intersected plane!");
 
         IntersectionInfo {
           color,
