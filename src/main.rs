@@ -11,6 +11,7 @@ use rustraylib::PosVector;
 use rustraylib::RenderData;
 use rustraylib::Renderer;
 use rustraylib::Scene;
+use rustraylib::nffparsing;
 
 fn create_output_file_path(iter: u32) -> String {
     format!("render_{}.png", iter)
@@ -52,6 +53,17 @@ fn get_simple_scene_and_camera() -> (Arc<Scene>, Camera) {
 }
 
 fn main() {
+    println!("preparing to render nff");
+    let parse_result = nffparsing::parse_nff_file("e:/repos/rustray/balls1.nff", num_cpus::get() as u32, 5);
+
+    let (elapsed, _) = measure_time(|| {
+        let scene_path = "render_nff.png";
+        Renderer::render_frame(parse_result.camera, parse_result.render_data, Arc::new(parse_result.scene), &scene_path);
+    });
+    println!("elapsed = {:?}ms", elapsed.millis());        
+}
+
+fn main_and_stuff() {
     let num_threads = num_cpus::get() as u32;
     let width = 1500;
     let height = 1500;

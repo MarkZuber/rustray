@@ -10,6 +10,7 @@ pub mod light;
 pub mod renderer;
 pub mod tracer;
 pub mod threading;
+pub mod nffparsing;
 
 pub use shapes::*;
 pub use camera::Camera;
@@ -20,4 +21,5 @@ pub use renderer::{RenderData, PixelArray, Renderer};
 pub use scene::{Scene};
 pub use posvector::PosVector;
 pub use color::ColorVector;
+pub use nffparsing::*;
 
