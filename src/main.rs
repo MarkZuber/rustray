@@ -45,22 +45,58 @@ fn get_marbles_scene_and_camera() -> (Arc<Scene>, Camera) {
         plane_d_val,
     ));
 
-    (scene, Camera::new(camera_pos, camera_look_at, camera_up, camera_fov))
+    (
+        scene,
+        Camera::new(camera_pos, camera_look_at, camera_up, camera_fov),
+    )
 }
 
 fn get_simple_scene_and_camera() -> (Arc<Scene>, Camera) {
-    (Arc::new(Scene::new_basic_scene()), Camera::new(PosVector::new(7.5, 7.5, 2.3), PosVector::new(0.0, 0.0, 0.0), PosVector::new(0.0, 0.0, 1.0), 50.0))
+    (
+        Arc::new(Scene::new_basic_scene()),
+        Camera::new(
+            PosVector::new(7.5, 7.5, 2.3),
+            PosVector::new(0.0, 0.0, 0.0),
+            PosVector::new(0.0, 0.0, 1.0),
+            50.0,
+        ),
+    )
+}
+
+fn render_nff(filename_no_ext: &str) {
+    println!("preparing to render nff: {}", filename_no_ext);
+
+    let nff_path = format!("nff/{}.nff", filename_no_ext);
+    let parse_result =
+        nffparsing::parse_nff_file(&nff_path, num_cpus::get() as u32, 5);
+
+    let (elapsed, _) = measure_time(|| {
+        let scene_path = format!("output/render_{}.png", filename_no_ext);
+        Renderer::render_frame(
+            parse_result.camera,
+            parse_result.render_data,
+            Arc::new(parse_result.scene),
+            &scene_path,
+        );
+    });
+    println!("elapsed = {:?}ms", elapsed.millis());
 }
 
 fn main() {
-    println!("preparing to render nff");
-    let parse_result = nffparsing::parse_nff_file("e:/repos/rustray/balls1.nff", num_cpus::get() as u32, 5);
-
-    let (elapsed, _) = measure_time(|| {
-        let scene_path = "render_nff.png";
-        Renderer::render_frame(parse_result.camera, parse_result.render_data, Arc::new(parse_result.scene), &scene_path);
-    });
-    println!("elapsed = {:?}ms", elapsed.millis());        
+    render_nff("balls1");
+    render_nff("balls2");
+    render_nff("balls3");
+    render_nff("mountain");
+    // render_nff("champagne");   // need to support polygonal patches for this one
+    // render_nff("spirale");     // need to support polygonal patches for this one
+    // render_nff("spirale2");    // need to support polygonal patches for this one
+    render_nff("teapot");
+    // render_nff("teapot2");     // need to support polygonal patches for this one
+    render_nff("temple");         // need to support polygonal patches for this one
+    render_nff("jacks1");
+    render_nff("jacks2");
+    render_nff("jacks3");
+    render_nff("jacks4");
 }
 
 fn main_and_stuff() {
@@ -74,24 +110,38 @@ fn main_and_stuff() {
         let (scene1, cam1) = get_marbles_scene_and_camera();
         let scene1_path = create_output_file_path(1);
         Renderer::render_frame(
-            cam1.clone(), 
-            RenderData { width, height, ray_trace_depth, num_threads, thread_per_line: true },
-            scene1.clone(), 
-            &scene1_path);
+            cam1.clone(),
+            RenderData {
+                width,
+                height,
+                ray_trace_depth,
+                num_threads,
+                thread_per_line: true,
+            },
+            scene1.clone(),
+            &scene1_path,
+        );
     });
-    println!("elapsed = {:?}ms", elapsed1.millis());        
+    println!("elapsed = {:?}ms", elapsed1.millis());
 
     println!("Preparing to render scene 2");
     let (elapsed2, _) = measure_time(|| {
         let (scene2, cam2) = get_simple_scene_and_camera();
         let scene2_path = create_output_file_path(2);
         Renderer::render_frame(
-            cam2.clone(), 
-            RenderData { width, height, ray_trace_depth, num_threads, thread_per_line: true },
-            scene2.clone(), 
-            &scene2_path);
+            cam2.clone(),
+            RenderData {
+                width,
+                height,
+                ray_trace_depth,
+                num_threads,
+                thread_per_line: true,
+            },
+            scene2.clone(),
+            &scene2_path,
+        );
     });
-    println!("elapsed = {:?}ms", elapsed2.millis());        
+    println!("elapsed = {:?}ms", elapsed2.millis());
 
     // for i in 1..2 {
     //     let output_file_path = create_output_file_path(i);
@@ -100,6 +150,6 @@ fn main_and_stuff() {
     //     });
     //     // camera = Camera::new(PosVector::new(camera.position.x, camera.position.y, camera.position.z - (0.1 * (i as f64))), camera_look_at, camera_up, camera_fov);
     //     // camera = Camera::new(PosVector::new(camera.position.x, camera.position.y, camera.position.z), camera_look_at, camera_up, camera_fov);
-    //     println!("elapsed = {:?}ms", elapsed.millis());        
+    //     println!("elapsed = {:?}ms", elapsed.millis());
     // }
 }

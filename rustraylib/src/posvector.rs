@@ -58,6 +58,14 @@ impl PosVector {
     }
   }
 
+  pub fn add_scaled(&self, other: PosVector, s: f64) -> PosVector {
+    PosVector {
+      x: self.x + (s * other.x),
+      y: self.y + (s * other.y),
+      z: self.z + (s * other.z)
+    }
+  }
+
   pub fn normalize(&self) -> PosVector {
     self.divide_by_scalar(self.magnitude())
   }

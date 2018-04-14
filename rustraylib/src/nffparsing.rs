@@ -18,7 +18,7 @@ pub struct NffParserResult {
   pub camera: Camera,
 }
 
-fn as_f64(s: &str) -> f64 {
+fn as_f64(s: &str) -> f64 {  
   s.parse::<f64>().unwrap()
 }
 
@@ -34,7 +34,7 @@ enum LookingFor {
   ViewpointAngle,
   ViewpointHither,
   ViewpointResolution,
-  Polygon
+  Polygon,
 }
 
 // see: http://www.fileformat.info/format/nff/egff.htm
@@ -47,35 +47,36 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
   let mut resolution_x = 1000;
   let mut resolution_y = 1000;
 
-  let chess_mat = ChessboardMaterial {
-    color_even: ColorVector::new(0.8, 0.8, 0.8),
-    color_odd: ColorVector::new(0.0, 0.0, 0.0),
-    material: BaseMaterial {
-      reflection: 0.2,
-      transparency: 0.0,
-      gloss: 1.0,
-      refraction: 0.0,
-    },
-    scale: 15.0,
-  };
+  // let chess_mat = ChessboardMaterial {
+  //   color_even: ColorVector::new(0.8, 0.8, 0.8),
+  //   color_odd: ColorVector::new(0.0, 0.0, 0.0),
+  //   material: BaseMaterial {
+  //     reflection: 0.2,
+  //     transparency: 0.0,
+  //     gloss: 1.0,
+  //     refraction: 0.0,
+  //   },
+  //   scale: 15.0,
+  // };
 
-
-  // bottom plane:  green
-  shapes.push(Box::new(PlaneShape {
-    position: PosVector::new(0.0, 0.0, 1.0),
-    d_val: 0.0,
-    // material: Arc::new(SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(0.0, 1.0, 0.0))),
-    material: Arc::new(chess_mat),
-    id: 0,
-  }));
+  // // bottom plane:  green
+  // shapes.push(Box::new(PlaneShape {
+  //   position: PosVector::new(0.0, 0.0, 1.0),
+  //   d_val: 0.0,
+  //   // material: Arc::new(SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(0.0, 1.0, 0.0))),
+  //   material: Arc::new(chess_mat),
+  //   id: 0,
+  // }));
 
   let mut background = Background::new(ColorVector::new(0.0, 0.0, 0.0), 0.0);
 
   let mut looking_for = LookingFor::Instruction;
-  let mut current_material = SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(0.0, 0.0, 0.0));
+  let mut current_material =
+    SolidMaterial::new(0.0, 0.0, 0.0, 0.0, ColorVector::new(0.0, 0.0, 0.0));
 
   let mut current_shape_id = 1;
   let mut current_item_counter = 0;
+  let mut poly_vectors: Vec<PosVector> = Vec::new();
 
   let f = File::open(file_path).unwrap();
   let file = BufReader::new(&f);
@@ -84,7 +85,7 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
 
     match looking_for {
       LookingFor::Instruction => {
-        let vec: Vec<&str> = l.split(" ").collect();
+        let vec: Vec<&str> = l.split_whitespace().collect();
 
         let instruction = vec[0];
 
@@ -106,16 +107,12 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
           let mut color_vec = ColorVector::new(1.0, 1.0, 1.0);
 
           if vec.len() == 7 {
-            color_vec = ColorVector::new(
-              as_f64(vec[4]),
-              as_f64(vec[5]),
-              as_f64(vec[6]),
-            );
+            color_vec = ColorVector::new(as_f64(vec[4]), as_f64(vec[5]), as_f64(vec[6]));
           }
 
           lights.push(Box::new(PointLight::new(
             PosVector::new(as_f64(vec[1]), as_f64(vec[2]), as_f64(vec[3])), // start at 1 to skip instruction
-            color_vec
+            color_vec,
           )));
         } else if instruction == "f" {
           // println!("reading f: {}", num);
@@ -133,10 +130,6 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
             as_f64(vec[5]),
             as_f64(vec[8]),
             as_f64(vec[7]),
-            // as_f64(vec[6]),
-            // as_f64(vec[4]),
-            // as_f64(vec[5]),
-            // as_f64(vec[7]),
             ColorVector::new(as_f64(vec[1]), as_f64(vec[2]), as_f64(vec[3])),
           );
         } else if instruction == "c" {
@@ -157,10 +150,13 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
           // println!("reading polygon: {}", num);
           // polygon
           current_item_counter = as_u32(vec[1]);
+          poly_vectors = Vec::new();
+
           looking_for = LookingFor::Polygon;
         } else if instruction == "pp" {
           // println!("reading polygon patch: {}", num);
           // polygon patch
+
         } else if instruction == "#" {
           // println!("reading comment: {}", num);
           // comment
@@ -169,16 +165,57 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
       LookingFor::Polygon => {
         if current_item_counter > 0 {
           current_item_counter = current_item_counter - 1;
-          // todo: parse polygon
+
+          let vec: Vec<&str> = l.split_whitespace().collect();
+
+          // println!("{:?}", vec);
+
+          poly_vectors.push(PosVector::new(
+            as_f64(vec[0]),
+            as_f64(vec[1]),
+            as_f64(vec[2]),
+          ));
         }
 
         if current_item_counter == 0 {
+          if poly_vectors.len() >= 3 {
+            let mut first_vert = poly_vectors[0];
+            let mut prev_vert = poly_vectors[1];
+            let mut this_vert = poly_vectors[2];
+
+            shapes.push(Box::new(TriangleShape::new(
+              first_vert,
+              prev_vert,
+              this_vert,
+              Arc::new(current_material),
+              Arc::new(current_material),
+              current_shape_id,
+            )));
+            current_shape_id = current_shape_id + 1;
+
+            for i in 3..poly_vectors.len() {
+              prev_vert = this_vert;
+
+              this_vert = poly_vectors[i];
+
+              shapes.push(Box::new(TriangleShape::new(
+                first_vert,
+                prev_vert,
+                this_vert,
+                Arc::new(current_material),
+                Arc::new(current_material),
+                current_shape_id,
+              )));
+              current_shape_id = current_shape_id + 1;
+            }
+          }
+
           looking_for = LookingFor::Instruction;
         }
       }
       LookingFor::ViewpointFrom => {
         // println!("reading viewpoint from: {}", num);
-        let vec: Vec<&str> = l.split(" ").collect();
+        let vec: Vec<&str> = l.split_whitespace().collect();
         // let instruction = vec[0];
         // todo: assert instruction == "from"
         camera_from = PosVector::new(as_f64(vec[1]), as_f64(vec[2]), as_f64(vec[3]));
@@ -186,7 +223,7 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
       }
       LookingFor::ViewpointAt => {
         // println!("reading viewpoint at: {}", num);
-        let vec: Vec<&str> = l.split(" ").collect();
+        let vec: Vec<&str> = l.split_whitespace().collect();
         // let instruction = vec[0];
         // todo: assert instruction == "at"
         camera_at = PosVector::new(as_f64(vec[1]), as_f64(vec[2]), as_f64(vec[3]));
@@ -194,7 +231,7 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
       }
       LookingFor::ViewpointUp => {
         // println!("reading viewpoint up: {}", num);
-        let vec: Vec<&str> = l.split(" ").collect();
+        let vec: Vec<&str> = l.split_whitespace().collect();
         // let instruction = vec[0];
         // todo: assert instruction == "at"
         camera_up = PosVector::new(as_f64(vec[1]), as_f64(vec[2]), as_f64(vec[3]));
@@ -212,7 +249,7 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
       }
       LookingFor::ViewpointResolution => {
         // println!("reading viewpoint resolution: {}", num);
-        let vec: Vec<&str> = l.split(" ").collect();
+        let vec: Vec<&str> = l.split_whitespace().collect();
         // let instruction = vec[0];
 
         resolution_x = as_u32(vec[1]);
