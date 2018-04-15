@@ -33,13 +33,40 @@ impl IntersectionInfo {
 }
 
 #[derive(Debug)]
+pub struct RayTraceStatistics {
+  pub num_rays_traced: u64,
+}
+
+impl RayTraceStatistics {
+  pub fn new() -> RayTraceStatistics {
+    RayTraceStatistics { num_rays_traced: 0 }
+  }
+
+  pub fn add_ray_traced(&mut self) {
+    self.num_rays_traced = self.num_rays_traced + 1;
+  }
+}
+
+#[derive(Debug)]
 pub struct RayTracer {
   pub camera: Camera,
   pub render_data: RenderData,
   pub scene: Arc<Scene>,
+  pub use_kd_tree: bool,
+  pub stats: Arc<RayTraceStatistics>,
 }
 
 impl RayTracer {
+  pub fn new(camera: Camera, render_data: RenderData, scene: Arc<Scene>) -> RayTracer {
+    RayTracer {
+      camera,
+      render_data,
+      scene,
+      use_kd_tree: false,
+      stats: Arc::new(RayTraceStatistics::new()),
+    }
+  }
+
   fn get_reflection_ray(&self, p: PosVector, n: PosVector, v: PosVector) -> Ray {
     let c1 = -(n.dot_product(v));
     let rl = v.add(n.multiply_by_scalar(2.0).multiply_by_scalar(c1));
@@ -56,7 +83,7 @@ impl RayTracer {
     Ray::new(p, t)
   }
 
-  fn test_intersection(&self, ray: &Ray, exclude: Option<Arc<Shape>>) -> IntersectionInfo {
+  fn test_intersection_basic(&self, ray: &Ray, exclude: Option<Arc<Shape>>) -> IntersectionInfo {
     let mut hit_count = 0;
     let mut best_info = IntersectionInfo::new_default();
 
@@ -80,6 +107,19 @@ impl RayTracer {
     best_info
   }
 
+  fn test_intersection_kd(&self, ray: &Ray, exclude: Option<Arc<Shape>>) -> IntersectionInfo {
+    IntersectionInfo::new_default()
+  }
+
+  fn test_intersection(&self, ray: &Ray, exclude: Option<Arc<Shape>>) -> IntersectionInfo {
+    // self.stats.add_ray_traced();
+    if self.use_kd_tree {
+      self.test_intersection_kd(ray, exclude)
+    } else {
+      self.test_intersection_basic(ray, exclude)
+    }
+  }
+
   fn render_diffuse(
     &self,
     current_color: ColorVector,
@@ -95,7 +135,12 @@ impl RayTracer {
 
       let l = v.dot_product(intersection_info.normal);
       if l > 0.0 {
-        color = color.add(intersection_info.color.multiply(light.get_color()).multiply_by_scalar(l))
+        color = color.add(
+          intersection_info
+            .color
+            .multiply(light.get_color())
+            .multiply_by_scalar(l),
+        )
       }
     }
     color
@@ -289,7 +334,7 @@ impl RayTracer {
   pub fn get_pixel_color(&self, x: u32, y: u32) -> ColorVector {
     // xp, yp are scaled as -1.0..1.0 each to represent their view range in the image regardless of final resolution.
     let xp = x as f64 / self.render_data.width as f64 * 2.0 - 1.0;
-    let yp = -(y as f64 / self.render_data.height as f64 * 2.0 - 1.0);  // yp is UP but our pixels are increasing in value DOWN.  so need inversion here.
+    let yp = -(y as f64 / self.render_data.height as f64 * 2.0 - 1.0); // yp is UP but our pixels are increasing in value DOWN.  so need inversion here.
 
     // println!("{},{} -> {},{}", x, y, xp, yp);
 

@@ -100,14 +100,17 @@ impl Renderer {
     pixel_array.lock().unwrap().save_as_png(output_file_path);
   }
 
-  fn render_single_threaded(camera: Camera, scene: Arc<Scene>, render_data: RenderData) -> Arc<Mutex<PixelArray>> {
-    let pixels = Arc::new(Mutex::new(PixelArray::new(render_data.width, render_data.height)));
+  fn render_single_threaded(
+    camera: Camera,
+    scene: Arc<Scene>,
+    render_data: RenderData,
+  ) -> Arc<Mutex<PixelArray>> {
+    let pixels = Arc::new(Mutex::new(PixelArray::new(
+      render_data.width,
+      render_data.height,
+    )));
 
-    let tracer = RayTracer {
-      camera,
-      render_data,
-      scene: scene,
-    };
+    let tracer = RayTracer::new(camera, render_data, scene);
 
     for y in 0..render_data.height {
       for x in 0..render_data.width {
@@ -121,14 +124,17 @@ impl Renderer {
     pixels
   }
 
-  fn render_multi_threaded(camera: Camera, scene: Arc<Scene>, render_data: RenderData) -> Arc<Mutex<PixelArray>> {
-    let pixels = Arc::new(Mutex::new(PixelArray::new(render_data.width, render_data.height)));
+  fn render_multi_threaded(
+    camera: Camera,
+    scene: Arc<Scene>,
+    render_data: RenderData,
+  ) -> Arc<Mutex<PixelArray>> {
+    let pixels = Arc::new(Mutex::new(PixelArray::new(
+      render_data.width,
+      render_data.height,
+    )));
 
-    let tracer = Arc::new(RayTracer {
-      camera,
-      render_data: render_data.clone(),
-      scene,
-    });
+    let tracer = Arc::new(RayTracer::new(camera, render_data.clone(), scene));
 
     let pool = ThreadPool::new(render_data.num_threads as usize);
 
