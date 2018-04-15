@@ -20,7 +20,6 @@ enum ValSign {
 }
 
 impl BoundingBox {
-
   fn minf64(x: f64, y: f64) -> f64 {
     if x < y {
       x
@@ -35,6 +34,17 @@ impl BoundingBox {
     } else {
       y
     }
+  }
+
+  pub fn from_shape(shape: &Shape) -> BoundingBox {
+    let (min_x, max_x) = shape.calculate_bounding_planes(PosVector::new_unit_x());
+    let (min_y, max_y) = shape.calculate_bounding_planes(PosVector::new_unit_y());
+    let (min_z, max_z) = shape.calculate_bounding_planes(PosVector::new_unit_z());
+
+    BoundingBox::new(
+      PosVector::new(min_x, min_y, min_z),
+      PosVector::new(max_x, max_y, max_z),
+    )
   }
 
   pub fn new(boxmin: PosVector, boxmax: PosVector) -> BoundingBox {
@@ -249,6 +259,7 @@ pub trait Shape: fmt::Debug {
   fn intersect(&self, ray: &Ray) -> IntersectionInfo;
   fn get_id(&self) -> u32;
   fn get_material(&self) -> Arc<Material>;
+  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> (f64, f64);
 }
 
 #[derive(Debug, Clone)]
@@ -414,6 +425,27 @@ impl Shape for TriangleShape {
   fn get_material(&self) -> Arc<Material> {
     self.front_material.clone()
   }
+
+  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> (f64, f64) {
+    let mut min_d = unit_vec.dot_product(self.va);
+    let mut max_d = unit_vec.dot_product(self.vb);
+
+    if max_d < min_d {
+      // swap
+      let temp = max_d;
+      max_d = min_d;
+      min_d = temp;
+    }
+
+    let t = unit_vec.dot_product(self.vc);
+    if t < min_d {
+      min_d = t;
+    } else {
+      max_d = t;
+    }
+
+    (min_d, max_d)
+  }
 }
 
 #[derive(Debug, Clone)]
@@ -468,6 +500,11 @@ impl Shape for SphereShape {
 
   fn get_material(&self) -> Arc<Material> {
     self.material.clone()
+  }
+
+  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> (f64, f64) {
+    let cd = unit_vec.dot_product(self.position);
+    (cd + self.radius, cd - self.radius)
   }
 }
 
@@ -527,5 +564,9 @@ impl Shape for PlaneShape {
   }
   fn get_material(&self) -> Arc<Material> {
     self.material.clone()
+  }
+
+  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> (f64, f64) {
+    (1.0, 1.0)
   }
 }
