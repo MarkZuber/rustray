@@ -107,7 +107,7 @@ impl RayTracer {
     best_info
   }
 
-  fn test_intersection_kd(&self, ray: &Ray, exclude: Option<Arc<Shape>>) -> IntersectionInfo {
+  fn test_intersection_kd(&self, _ray: &Ray, _exclude: Option<Arc<Shape>>) -> IntersectionInfo {
     IntersectionInfo::new_default()
   }
 
@@ -251,7 +251,7 @@ impl RayTracer {
         .get_position()
         .subtract(elem.get_position())
         .normalize();
-      let h = e.subtract(lv).normalize();
+      let _h = e.subtract(lv).normalize();
       let gloss_weight = 0.0; // todo: pow(std::max(dot(info->Normal(), h), 0.0), shininess);
       color = color.add(light.get_color().multiply_by_scalar(gloss_weight));
     }

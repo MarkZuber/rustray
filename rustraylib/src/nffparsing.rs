@@ -80,7 +80,7 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
 
   let f = File::open(file_path).unwrap();
   let file = BufReader::new(&f);
-  for (num, line) in file.lines().enumerate() {
+  for (_num, line) in file.lines().enumerate() {
     let l = line.unwrap();
 
     match looking_for {
@@ -256,7 +256,6 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
         resolution_y = as_u32(vec[2]);
         looking_for = LookingFor::Instruction;
       }
-      _ => {}
     }
   }
 

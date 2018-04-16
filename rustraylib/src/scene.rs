@@ -185,7 +185,10 @@ impl Scene {
         material: Arc::new(chess_mat),
         id,
       }));
-      id = id + 1;
+
+      // todo: need to move this into scene
+      // so we're not manually managing this
+      // id = id + 1;
     }
 
     let mut lights: Vec<Box<Light>> = Vec::new();

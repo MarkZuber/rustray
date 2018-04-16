@@ -13,10 +13,12 @@ use rustraylib::Renderer;
 use rustraylib::Scene;
 use rustraylib::nffparsing;
 
+#[allow(dead_code)]
 fn create_output_file_path(iter: u32) -> String {
     format!("render_{}.png", iter)
 }
 
+#[allow(dead_code)]
 fn get_marbles_scene_and_camera() -> (Arc<Scene>, Camera) {
     let camera_pos = PosVector::new(50.0, 30.0, 50.0);
 
@@ -51,6 +53,7 @@ fn get_marbles_scene_and_camera() -> (Arc<Scene>, Camera) {
     )
 }
 
+#[allow(dead_code)]
 fn get_simple_scene_and_camera() -> (Arc<Scene>, Camera) {
     (
         Arc::new(Scene::new_basic_scene()),
@@ -99,6 +102,7 @@ fn main() {
     render_nff("jacks4");
 }
 
+#[allow(dead_code)]
 fn main_and_stuff() {
     let num_threads = num_cpus::get() as u32;
     let width = 1500;

@@ -153,9 +153,9 @@ impl BoundingBox {
         self.boxmax.z,
       ) {
       let mut max_enter_dist: f64 = 0.0;
-      let mut max_enter_axis: i32 = 0;
+      // let mut max_enter_axis: i32 = 0;
       let mut min_exit_dist: f64 = 0.0;
-      let mut min_exit_axis: i32 = 0;
+      // let mut min_exit_axis: i32 = 0;
 
       let mut mx: f64 = 0.0;
       let mut mn: f64 = 0.0;
@@ -164,8 +164,8 @@ impl BoundingBox {
         ValSign::Zero => {
           max_enter_dist = -f64::MAX;
           min_exit_dist = f64::MAX;
-          max_enter_axis = -1;
-          min_exit_axis = -1;
+          // max_enter_axis = -1;
+          // min_exit_axis = -1;
         }
         ValSign::Positive => {
           mx = self.boxmax.x;
@@ -182,8 +182,8 @@ impl BoundingBox {
         _ => {
           max_enter_dist = (mn - ray.get_position().x) * dir_inv.x;
           min_exit_dist = (mx - ray.get_position().x) * dir_inv.x;
-          max_enter_axis = 0;
-          min_exit_axis = 0;
+          // max_enter_axis = 0;
+          // min_exit_axis = 0;
         }
       }
 
@@ -206,11 +206,11 @@ impl BoundingBox {
           let new_exit_dist = (mx - ray.get_position().y) * dir_inv.y;
           if max_enter_dist < new_enter_dist {
             max_enter_dist = new_enter_dist;
-            max_enter_axis = 1;
+            // max_enter_axis = 1;
           }
           if min_exit_dist > new_exit_dist {
             min_exit_dist = new_exit_dist;
-            min_exit_axis = 1;
+            // min_exit_axis = 1;
           }
         }
       }
@@ -234,11 +234,11 @@ impl BoundingBox {
           let new_exit_dist = (mx - ray.get_position().z) * dir_inv.z;
           if max_enter_dist < new_enter_dist {
             max_enter_dist = new_enter_dist;
-            max_enter_axis = 2;
+            // max_enter_axis = 2;
           }
           if min_exit_dist > new_exit_dist {
             min_exit_dist = new_exit_dist;
-            min_exit_axis = 2;
+            // min_exit_axis = 2;
           }
         }
       }
@@ -392,7 +392,7 @@ impl Shape for TriangleShape {
       no_intersection = true;
     }
 
-    let returned_pos = q; // point of intersection
+    let _returned_pos = q; // point of intersection
     let color = if front_face {
       self.front_material.get_color(v_coord, w_coord)
     } else {
@@ -566,7 +566,7 @@ impl Shape for PlaneShape {
     self.material.clone()
   }
 
-  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> (f64, f64) {
+  fn calculate_bounding_planes(&self, _unit_vec: PosVector) -> (f64, f64) {
     (1.0, 1.0)
   }
 }
