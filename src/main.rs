@@ -13,6 +13,9 @@ use rustraylib::Renderer;
 use rustraylib::Scene;
 use rustraylib::nffparsing;
 
+use rustraylib::scene::{new_basic_scene, new_marbles_scene};
+
+
 #[allow(dead_code)]
 fn create_output_file_path(iter: u32) -> String {
     format!("render_{}.png", iter)
@@ -36,7 +39,7 @@ fn get_marbles_scene_and_camera() -> (Arc<Scene>, Camera) {
     let plane_pos = PosVector::new(0.0, 0.0, 1.0);
     let plane_d_val: f64 = 0.0;
 
-    let scene = Arc::new(Scene::new_marbles_scene(
+    let scene = Arc::new(new_marbles_scene(
         background_color,
         background_ambience,
         sphere_radius,
@@ -56,7 +59,7 @@ fn get_marbles_scene_and_camera() -> (Arc<Scene>, Camera) {
 #[allow(dead_code)]
 fn get_simple_scene_and_camera() -> (Arc<Scene>, Camera) {
     (
-        Arc::new(Scene::new_basic_scene()),
+        Arc::new(new_basic_scene()),
         Camera::new(
             PosVector::new(7.5, 7.5, 2.3),
             PosVector::new(0.0, 0.0, 0.0),
@@ -87,19 +90,19 @@ fn render_nff(filename_no_ext: &str) {
 
 fn main() {
     render_nff("balls1");
-    render_nff("balls2");
-    render_nff("balls3");
-    render_nff("mountain");
-    // render_nff("champagne");   // need to support polygonal patches for this one
-    // render_nff("spirale");     // need to support polygonal patches for this one
-    // render_nff("spirale2");    // need to support polygonal patches for this one
-    render_nff("teapot");
-    // render_nff("teapot2");     // need to support polygonal patches for this one
-    render_nff("temple");         // need to support polygonal patches for this one
-    render_nff("jacks1");
-    render_nff("jacks2");
-    render_nff("jacks3");
-    render_nff("jacks4");
+    // render_nff("balls2");
+    // render_nff("balls3");
+    // render_nff("mountain");
+    // // render_nff("champagne");   // need to support polygonal patches for this one
+    // // render_nff("spirale");     // need to support polygonal patches for this one
+    // // render_nff("spirale2");    // need to support polygonal patches for this one
+    // render_nff("teapot");
+    // // render_nff("teapot2");     // need to support polygonal patches for this one
+    // render_nff("temple");         // need to support polygonal patches for this one
+    // render_nff("jacks1");
+    // render_nff("jacks2");
+    // render_nff("jacks3");
+    // render_nff("jacks4");
 }
 
 #[allow(dead_code)]
@@ -115,13 +118,13 @@ fn main_and_stuff() {
         let scene1_path = create_output_file_path(1);
         Renderer::render_frame(
             cam1.clone(),
-            RenderData {
+            RenderData::new(
                 width,
                 height,
                 ray_trace_depth,
                 num_threads,
-                thread_per_line: true,
-            },
+                true,
+            ),
             scene1.clone(),
             &scene1_path,
         );
@@ -134,13 +137,13 @@ fn main_and_stuff() {
         let scene2_path = create_output_file_path(2);
         Renderer::render_frame(
             cam2.clone(),
-            RenderData {
+            RenderData::new(
                 width,
                 height,
                 ray_trace_depth,
                 num_threads,
-                thread_per_line: true,
-            },
+                true,
+            ),
             scene2.clone(),
             &scene2_path,
         );

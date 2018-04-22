@@ -58,6 +58,20 @@ pub struct RenderData {
   pub ray_trace_depth: u32,
   pub num_threads: u32,
   pub thread_per_line: bool,
+  pub render_diffuse: bool,
+  pub render_reflection: bool,
+  pub render_refraction: bool,
+  pub render_shadow: bool,
+  pub render_highlights: bool
+}
+
+impl RenderData {
+  pub fn new(width: u32, height: u32,
+                ray_trace_depth: u32,
+                num_threads: u32,
+                thread_per_line: bool) -> RenderData {
+    RenderData{width, height, ray_trace_depth, num_threads, thread_per_line, render_diffuse: true, render_reflection: true, render_refraction: true, render_shadow: true, render_highlights: true }
+  }
 }
 
 pub struct Renderer {}

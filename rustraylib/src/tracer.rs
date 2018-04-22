@@ -1,19 +1,16 @@
 use std::sync::Arc;
 use color::ColorVector;
 use posvector::PosVector;
-use shapes::Shape;
 use camera::{Camera, Ray};
 use renderer::RenderData;
-use scene::Scene;
-use light::Light;
+use scene::{Scene,CompiledShape,CompiledLight};
 
 #[derive(Debug)]
 pub struct IntersectionInfo {
   pub color: ColorVector,
   pub distance: f64,
-  pub element: Option<Arc<Shape>>,
+  pub element_id: u32,
   pub is_hit: bool,
-  pub hit_count: u32,
   pub normal: PosVector,
   pub position: PosVector,
 }
@@ -23,12 +20,22 @@ impl IntersectionInfo {
     IntersectionInfo {
       color: ColorVector::new(0.0, 0.0, 0.0),
       distance: 100000000000.0, // todo: f64 max
-      element: None,
+      element_id: 0,
       is_hit: false,
-      hit_count: 0,
       normal: PosVector::new_default(),
       position: PosVector::new_default(),
     }
+  }
+
+  pub fn new(color: ColorVector, distance: f64, normal: PosVector, position: PosVector) -> IntersectionInfo {
+    IntersectionInfo {
+      color,
+      distance,
+      element_id: 0,
+      is_hit: true,
+      normal,
+      position
+    }    
   }
 }
 
@@ -83,40 +90,31 @@ impl RayTracer {
     Ray::new(p, t)
   }
 
-  fn test_intersection_basic(&self, ray: &Ray, exclude: Option<Arc<Shape>>) -> IntersectionInfo {
-    let mut hit_count = 0;
+  fn test_intersection_basic(&self, ray: &Ray, exclude_id: u32) -> IntersectionInfo {
     let mut best_info = IntersectionInfo::new_default();
 
-    let mut exclude_shape_id = 0;
-
-    if let Some(exclude_shape) = exclude {
-      exclude_shape_id = exclude_shape.get_id();
-    }
-
-    for shape in &self.scene.shapes {
-      if shape.get_id() != exclude_shape_id {
+    for (_, shape) in &self.scene.shapes {
+      if shape.get_id() != exclude_id {
         let info = shape.intersect(ray);
         if info.is_hit && info.distance < best_info.distance && info.distance >= 0.0 {
           best_info = info;
-          hit_count = hit_count + 1;
         }
       }
     }
 
-    best_info.hit_count = hit_count;
     best_info
   }
 
-  fn test_intersection_kd(&self, _ray: &Ray, _exclude: Option<Arc<Shape>>) -> IntersectionInfo {
+  fn test_intersection_kd(&self, _ray: &Ray, _exclude_id: u32) -> IntersectionInfo {
     IntersectionInfo::new_default()
   }
 
-  fn test_intersection(&self, ray: &Ray, exclude: Option<Arc<Shape>>) -> IntersectionInfo {
+  fn test_intersection(&self, ray: &Ray, exclude_id: u32) -> IntersectionInfo {
     // self.stats.add_ray_traced();
     if self.use_kd_tree {
-      self.test_intersection_kd(ray, exclude)
+      self.test_intersection_kd(ray, exclude_id)
     } else {
-      self.test_intersection_basic(ray, exclude)
+      self.test_intersection_basic(ray, exclude_id)
     }
   }
 
@@ -124,10 +122,10 @@ impl RayTracer {
     &self,
     current_color: ColorVector,
     intersection_info: &IntersectionInfo,
-    light: &Box<Light>,
+    light: &Box<CompiledLight>,
   ) -> ColorVector {
     let mut color = current_color;
-    if self.scene.render_diffuse {
+    if self.render_data.render_diffuse {
       let v = light
         .get_position()
         .subtract(intersection_info.position)
@@ -155,8 +153,8 @@ impl RayTracer {
   ) -> ColorVector {
     let mut color = current_color;
 
-    if self.scene.render_reflection {
-      match intersection_info.element.clone() {
+    if self.render_data.render_reflection {
+      match self.scene.get_shape(&intersection_info.element_id) {
         None => {}
         Some(elem) => {
           if elem.get_material().get_reflection() > 0.0 {
@@ -165,7 +163,7 @@ impl RayTracer {
               intersection_info.normal,
               ray.get_direction(),
             );
-            let mut refl = self.test_intersection(&reflection_ray, Some(elem.clone()));
+            let mut refl = self.test_intersection(&reflection_ray, elem.get_id());
             if refl.is_hit && refl.distance > 0.0 {
               refl.color = self.ray_trace(&refl, &reflection_ray, depth + 1);
             } else {
@@ -190,8 +188,8 @@ impl RayTracer {
   ) -> ColorVector {
     let mut color = current_color;
 
-    if self.scene.render_refraction {
-      match intersection_info.element.clone() {
+    if self.render_data.render_refraction {
+      match self.scene.get_shape(&intersection_info.element_id) {
         None => {}
         Some(elem) => {
           if elem.get_material().get_transparency() > 0.0 {
@@ -203,7 +201,7 @@ impl RayTracer {
             );
             let mut refr = elem.clone().intersect(&refraction_ray);
             if refr.is_hit {
-              match refr.element {
+              match self.scene.get_shape(&refr.element_id) {
                 None => {}
                 Some(refrelem) => {
                   let element_refraction_ray = self.get_refraction_ray(
@@ -212,7 +210,7 @@ impl RayTracer {
                     refraction_ray.get_direction(),
                     refrelem.get_material().get_refraction(),
                   );
-                  refr = self.test_intersection(&element_refraction_ray, Some(elem.clone()));
+                  refr = self.test_intersection(&element_refraction_ray, elem.get_id());
                   if refr.is_hit && refr.distance > 0.0 {
                     refr.color = self.ray_trace(&refr, &element_refraction_ray, depth + 1);
                   } else {
@@ -234,12 +232,12 @@ impl RayTracer {
   fn render_highlights(
     &self,
     current_color: ColorVector,
-    elem: Arc<Shape>,
+    elem: &CompiledShape,
     shadow_intersection: &IntersectionInfo,
-    light: &Box<Light>,
+    light: &Box<CompiledLight>,
   ) -> ColorVector {
     let mut color = current_color;
-    if self.scene.render_highlights && !shadow_intersection.is_hit
+    if self.render_data.render_highlights && !shadow_intersection.is_hit
       && elem.get_material().get_gloss() > 0.0
     {
       let lv = elem
@@ -262,7 +260,7 @@ impl RayTracer {
     &self,
     current_color: ColorVector,
     intersection_info: &IntersectionInfo,
-    light: &Box<Light>,
+    light: &Box<CompiledLight>,
   ) -> ColorVector {
     let mut color = current_color;
 
@@ -273,13 +271,13 @@ impl RayTracer {
 
     let shadow_ray = Ray::new(intersection_info.position, v);
 
-    match intersection_info.element.clone() {
+    match self.scene.get_shape(&intersection_info.element_id) {
       None => {}
       Some(elem) => {
-        let shadow_intersection = self.test_intersection(&shadow_ray, Some(elem.clone()));
-        if self.scene.render_shadow {
+        let shadow_intersection = self.test_intersection(&shadow_ray, elem.get_id());
+        if self.render_data.render_shadow {
           if shadow_intersection.is_hit {
-            match shadow_intersection.element.clone() {
+            match self.scene.get_shape(&shadow_intersection.element_id) {
               None => {}
               Some(shadowelem) => {
                 if shadowelem.clone().get_id() != elem.get_id() {
@@ -292,7 +290,7 @@ impl RayTracer {
           }
         }
 
-        color = self.render_highlights(color, elem, &shadow_intersection, light);
+        color = self.render_highlights(color, elem.clone(), &shadow_intersection, light);
       }
     }
     color
@@ -308,7 +306,7 @@ impl RayTracer {
     // rust note:  need the & since we want references to the items in the iteration.
     // by default, for loops use into_iter<> which is a MOVE
     // http://hermanradtke.com/2015/06/22/effectively-using-iterators-in-rust.html
-    for light in &self.scene.lights {
+    for (_, light) in &self.scene.lights {
       color = self.render_diffuse(color, intersection_info, light);
 
       // max depth of raytracing.  increasing depth calculates more color, but takes exp longer
@@ -323,7 +321,7 @@ impl RayTracer {
   }
 
   fn calculate_color(&self, ray: &Ray) -> ColorVector {
-    let intersection_info = self.test_intersection(ray, None);
+    let intersection_info = self.test_intersection(ray, 0);
     if intersection_info.is_hit {
       self.ray_trace(&intersection_info, ray, 0)
     } else {

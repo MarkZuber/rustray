@@ -277,6 +277,7 @@ dependencies = [
 name = "rustraylib"
 version = "0.1.0"
 dependencies = [
+ "elapsed 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

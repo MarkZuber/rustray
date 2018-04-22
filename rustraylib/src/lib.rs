@@ -1,4 +1,5 @@
 extern crate image;
+extern crate elapsed;
 
 pub mod posvector;
 pub mod color;

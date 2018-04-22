@@ -7,10 +7,23 @@ use posvector::PosVector;
 use camera::Ray;
 use tracer::IntersectionInfo;
 
+#[derive(Debug)]
+pub struct Bound {
+  pub min: f64,
+  pub max: f64
+}
+
+impl Bound {
+  pub fn new(min: f64, max: f64) -> Bound {
+    Bound { min, max }
+  }
+}
+
 // Axis Aligned Bounding Box for kdTree subdivision of shapes
+#[derive(Debug)]
 pub struct BoundingBox {
-  boxmin: PosVector, // lower corner (min value for all coords)
-  boxmax: PosVector, // upper corner (max value for all coords)
+  pub boxmin: PosVector, // lower corner (min value for all coords)
+  pub boxmax: PosVector, // upper corner (max value for all coords)
 }
 
 enum ValSign {
@@ -36,34 +49,31 @@ impl BoundingBox {
     }
   }
 
-  pub fn from_shape(shape: &Shape) -> BoundingBox {
-    let (min_x, max_x) = shape.calculate_bounding_planes(PosVector::new_unit_x());
-    let (min_y, max_y) = shape.calculate_bounding_planes(PosVector::new_unit_y());
-    let (min_z, max_z) = shape.calculate_bounding_planes(PosVector::new_unit_z());
-
+  pub fn from_shape(shape: &Arc<Box<Shape>>) -> BoundingBox {
     BoundingBox::new(
-      PosVector::new(min_x, min_y, min_z),
-      PosVector::new(max_x, max_y, max_z),
+      shape.calculate_bounding_planes(PosVector::new_unit_x()),
+      shape.calculate_bounding_planes(PosVector::new_unit_y()),
+      shape.calculate_bounding_planes(PosVector::new_unit_z()),
     )
   }
 
-  pub fn new(boxmin: PosVector, boxmax: PosVector) -> BoundingBox {
-    BoundingBox { boxmin, boxmax }
+  pub fn new(
+    bounding_x: Bound,
+    bounding_y: Bound,
+    bounding_z: Bound,
+  ) -> BoundingBox {
+    BoundingBox {
+      boxmin: PosVector::new(bounding_x.min, bounding_y.min, bounding_z.min),
+      boxmax: PosVector::new(bounding_x.max, bounding_y.max, bounding_z.max)
+    }
   }
 
   pub fn get_enlarged_to_enclose(&self, other: &BoundingBox) -> BoundingBox {
     BoundingBox::new(
-      PosVector::new(
-        BoundingBox::minf64(self.boxmin.x, other.boxmin.x),
-        BoundingBox::minf64(self.boxmin.y, other.boxmin.y),
-        BoundingBox::minf64(self.boxmin.z, other.boxmin.z),
-      ),
-      PosVector::new(
-        BoundingBox::maxf64(self.boxmax.x, other.boxmax.x),
-        BoundingBox::maxf64(self.boxmax.y, other.boxmax.y),
-        BoundingBox::maxf64(self.boxmax.z, other.boxmax.z),
-      ),
-    )
+        Bound::new(BoundingBox::minf64(self.boxmin.x, other.boxmin.x), BoundingBox::maxf64(self.boxmax.x, other.boxmax.x)),
+        Bound::new(BoundingBox::minf64(self.boxmin.x, other.boxmin.x), BoundingBox::maxf64(self.boxmax.x, other.boxmax.x)),
+        Bound::new(BoundingBox::minf64(self.boxmin.x, other.boxmin.x), BoundingBox::maxf64(self.boxmax.x, other.boxmax.x)),
+      )
   }
 
   pub fn get_box_min(&self) -> PosVector {
@@ -257,9 +267,8 @@ impl BoundingBox {
 pub trait Shape: fmt::Debug {
   fn get_position(&self) -> PosVector;
   fn intersect(&self, ray: &Ray) -> IntersectionInfo;
-  fn get_id(&self) -> u32;
   fn get_material(&self) -> Arc<Material>;
-  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> (f64, f64);
+  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> Bound;
 }
 
 #[derive(Debug, Clone)]
@@ -403,20 +412,8 @@ impl Shape for TriangleShape {
       IntersectionInfo::new_default()
     } else {
       // found intersection
-      IntersectionInfo {
-        color,
-        distance: intersect_distance,
-        element: Some(Arc::new(self.clone())),
-        is_hit: true,
-        hit_count: 1,
-        normal: self.normal,
-        position: q,
-      }
+      IntersectionInfo::new(color,intersect_distance,self.normal, q)
     }
-  }
-
-  fn get_id(&self) -> u32 {
-    self.id
   }
 
   // todo: we will want to clone a reference to the selected material into the
@@ -426,7 +423,7 @@ impl Shape for TriangleShape {
     self.front_material.clone()
   }
 
-  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> (f64, f64) {
+  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> Bound {
     let mut min_d = unit_vec.dot_product(self.va);
     let mut max_d = unit_vec.dot_product(self.vb);
 
@@ -444,7 +441,7 @@ impl Shape for TriangleShape {
       max_d = t;
     }
 
-    (min_d, max_d)
+    Bound::new(min_d, max_d)
   }
 }
 
@@ -480,31 +477,19 @@ impl Shape for SphereShape {
       // println!("intersected sphere!");
 
       // found intersection
-      IntersectionInfo {
-        color,
-        distance,
-        element: Some(Arc::new(self.clone())),
-        is_hit: true,
-        hit_count: 1,
-        normal,
-        position,
-      }
+      IntersectionInfo::new(color,distance,normal, position)
     } else {
       IntersectionInfo::new_default()
     }
-  }
-
-  fn get_id(&self) -> u32 {
-    self.id
   }
 
   fn get_material(&self) -> Arc<Material> {
     self.material.clone()
   }
 
-  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> (f64, f64) {
+  fn calculate_bounding_planes(&self, unit_vec: PosVector) -> Bound {
     let cd = unit_vec.dot_product(self.position);
-    (cd + self.radius, cd - self.radius)
+    Bound::new(cd + self.radius, cd - self.radius)
   }
 }
 
@@ -545,28 +530,16 @@ impl Shape for PlaneShape {
         }
 
         // println!("intersected plane!");
-
-        IntersectionInfo {
-          color,
-          distance: t,
-          element: Some(Arc::new(self.clone())),
-          is_hit: true,
-          hit_count: 1,
-          normal: self.position,
-          position: intersect_position,
-        }
+        IntersectionInfo::new(color,t,self.position,intersect_position)
       }
     }
   }
 
-  fn get_id(&self) -> u32 {
-    self.id
-  }
   fn get_material(&self) -> Arc<Material> {
     self.material.clone()
   }
 
-  fn calculate_bounding_planes(&self, _unit_vec: PosVector) -> (f64, f64) {
-    (1.0, 1.0)
+  fn calculate_bounding_planes(&self, _unit_vec: PosVector) -> Bound {
+    Bound::new(1.0, 1.0)
   }
 }

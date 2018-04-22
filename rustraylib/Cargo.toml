@@ -5,3 +5,4 @@ authors = ["Mark Zuber <mark@zube.com>"]
 
 [dependencies]
 image = "*"
+elapsed = "0.1"

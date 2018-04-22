@@ -260,23 +260,18 @@ pub fn parse_nff_file(file_path: &str, num_threads: u32, ray_trace_depth: u32) -
   }
 
   NffParserResult {
-    scene: Scene {
+    scene: Scene::new(
       background,
       shapes,
-      lights,
-      render_diffuse: true,
-      render_reflection: true,
-      render_refraction: true,
-      render_shadow: true,
-      render_highlights: true,
-    },
-    render_data: RenderData {
-      width: resolution_x,
-      height: resolution_y,
+      lights
+    ),
+    render_data: RenderData::new(
+      resolution_x,
+      resolution_y,
       ray_trace_depth,
       num_threads,
-      thread_per_line: true,
-    },
+      true,
+    ),
     camera: Camera::new(camera_from, camera_at, camera_up, 50.0),
   }
 }
